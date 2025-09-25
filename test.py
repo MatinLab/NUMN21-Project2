@@ -9,7 +9,7 @@ def rosen(x):
     x = np.asarray(x, dtype=float)
     return 100.0*(x[1]-x[0]**2)**2 + (1.0 - x[0])**2
 
-# Optional analytic gradient (not required; your code can FD this)
+# Optional analytic gradient (not required)
 def rosen_grad(x):
     x = np.asarray(x, dtype=float)
     dfdx = -400.0 * x[0] * (x[1] - x[0]**2) - 2.0*(1.0 - x[0])
