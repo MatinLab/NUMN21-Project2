@@ -15,7 +15,7 @@ class QuasiNewton(OptMethod):
         tol: float = 1e-8,
         max_iter: int = 200,
         callback=None,
-        line_search: LineSearch | None = None
+        line_search=None
     ):
         self.tol = tol
         self.max_iter = max_iter
