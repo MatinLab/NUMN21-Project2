@@ -89,12 +89,19 @@ class OptMethod():
                 print(f"At end interval [a, b]=[{a}, {b}]")
                 break
         return (b+a)/2
+    
+    # Line search methods
+    def line_search(self, function, x0, grad, H_inv, dx, tol):
+        # Follow this format when defining a line search method
+        # Then specify that you want to use it as a parameter in optimize
+        # Don't need self if the function is defined outside a class
+        pass
                 
         
         
 class Newton(OptMethod):
     # Newtons method for finding the root of the gradient
-    def optimize(self, function, x0, gradient=None, dx=10**-4, termination_criterion=None, tol=10**-4, alpha=None, max_iterations=10**5):
+    def optimize(self, function, x0, gradient=None, dx=10**-4, termination_criterion=None, tol=10**-4, alpha=None, line_search=None, max_iterations=10**5):
         """
         Parameters
         ----------
@@ -113,6 +120,10 @@ class Newton(OptMethod):
             Tolerance within which termination should occur in termination_criterion. The default is 10**-4.
         alpha : float, optional
             Step size in Newton's method. If not specified, exact line search is used. The default is 1.
+        line_search: function, optional
+            Function to return the alpha step size. If not specified, exact line search is used. Any line search function
+            should take the function, the point, the gradient, the inverse Hessian, a step size to use in numerical
+            approximations, and the tolerance with which to find the step size. The default is None.
         max_iterations : int, optional
             Maximum iterations to perform before terminating. The default is 10**5.
 
@@ -130,17 +141,21 @@ class Newton(OptMethod):
         # Default to numerical gradient if no gradient provided
         if gradient is None:
             gradient = self.approximate_grad
+        # Default to exact line search
+        if line_search is None:
+            line_search = self.exact_line_search
         # Run Newton's method
         H_inv = np.linalg.inv(self.approximate_hessian(function, x0, dx))
         grad = gradient(function, x0, dx)
         Sk = -1*H_inv @ grad
         if alpha is None:
-            alpha = self.exact_line_search(function, x0, grad, H_inv, dx, tol)
+            alpha = line_search(function, x0, grad, H_inv, dx, tol)
         x1 = x0 + alpha*Sk
         i = 0
         while not termination_criterion(x0, x1, grad, H_inv, tol):
             # Hasn't converged, make another step
             x0 = x1.copy()
+            # REMOVE TRY CATCH LATER
             try:
                 H = self.approximate_hessian(function, x0, dx)
                 H_inv = np.linalg.inv(H)
@@ -153,7 +168,7 @@ class Newton(OptMethod):
             grad = gradient(function, x0, dx)
             Sk = -1*H_inv @ grad
             if alpha is None:
-                alpha = self.exact_line_search(function, x0, grad, H_inv, dx, tol)
+                alpha = line_search(function, x0, grad, H_inv, dx, tol)
             x1 = x0 + alpha*Sk
             # Backup termination
             i += 1
