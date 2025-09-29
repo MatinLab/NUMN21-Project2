@@ -177,7 +177,8 @@ class Newton(OptMethod):
             else:
                 alpha = 1.0
             # -------------------------------------
-
+            hist[-1]["alpha"] = float(alpha)
+            
             x = x + alpha * p
 
         # If we exit the loop without converging:

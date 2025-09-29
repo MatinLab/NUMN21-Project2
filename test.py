@@ -9,6 +9,10 @@ def rosen(x):
     x = np.asarray(x, dtype=float)
     return 100.0*(x[1]-x[0]**2)**2 + (1.0 - x[0])**2
 
+def parabolic(x):
+    x = np.asarray(x, dtype=float)
+    return (x[0])**2 + (x[1])**2
+
 # Optional analytic gradient (not required)
 def rosen_grad(x):
     x = np.asarray(x, dtype=float)
@@ -32,7 +36,8 @@ def run_newton_and_plot(info,
     xg = np.linspace(x_range[0], x_range[1], n_grid)
     yg = np.linspace(y_range[0], y_range[1], n_grid)
     X, Y = np.meshgrid(xg, yg)
-    Z = 100.0 * (Y - X**2)**2 + (1.0 - X)**2
+    #Z = 100.0 * (Y - X**2)**2 + (1.0 - X)**2
+    Z = prob.f
 
     if levels is None:
         levels = np.geomspace(1e-2, 1e4, 20)
@@ -44,7 +49,7 @@ def run_newton_and_plot(info,
 
     plt.plot(path[:, 0], path[:, 1], marker='o', linewidth=1.5)
 
-    plt.title("Rosenbrock: Newton with exact line search (Task 5)")
+    plt.title("Rosenbrock function with steps towards the minimum")
     plt.xlabel("x")
     plt.ylabel("y")
     plt.xlim(x_range)
@@ -62,8 +67,8 @@ if __name__ == "__main__":
 ========================================================
 Testing Classic Newton's Optimization Method (Task 1-4)
 ========================================================""")
-    prob = OptProblem(rosen)
-    solver = Newton(tol=1e-8, max_iter=5, use_line_search=True)
+    prob = OptProblem(parabolic)
+    solver = Newton(tol=1e-8, max_iter=2, use_line_search=True)
 
     x0 = np.array([-1.2, 1.0])
     xmin, fmin, info = solver.optimize(prob, x0=x0)
