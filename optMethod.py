@@ -1,4 +1,5 @@
 import numpy as np
+from linesearch import InexactLineSearchMethod
 
 class OptMethod():
     # Generic class for Quasi Newton methods
@@ -120,17 +121,18 @@ class OptMethod():
         return (b+a)/2
     
     # Line search methods
-    def line_search(self, function, x0, grad, H_inv, dx, tol):
+    def line_search(self, f, x, gradient, H_inv, dx, tol):
         # Follow this format when defining a line search method
         # Then specify that you want to use it as a parameter in optimize
         # Don't need self if the function is defined outside a class
         pass
     
     # Exact line search method
-    def exact_line_search(self, f, x, grad, H_inv, dx=10**-4, tol=10**-4):
+    def exact_line_search(self, f, x, gradient, H_inv, dx=10**-4, tol=10**-4):
         # Find the minimum of the function f(alpha) = f(x+alpha*(-H_inv@grad))
         # Using binary search
         # Find an interval [0, b] on which the sign of the derivative of f(alpha) changes
+        grad = gradient(f, x, dx)
         Sk = -1*H_inv @ grad
         f_alpha = lambda a: f(x+a*Sk)
         a = 0
@@ -150,6 +152,18 @@ class OptMethod():
         #print(f"sign change found on interval [{a}, {b}]")
         # Find the minimum on the interval a, b
         return self.binary_minimum(f_alpha, a, b, tol)
+    
+    # Inexact line search wrapper
+    def create_inexact_linesearch(self, f, alpha_init, direction, dx=10**-4, tol=10**-4, f_bar=np.inf, rho=1e-2, sigma=0.1, tau=9, bracketing_max_iterations=50,
+                                  tau2=0.1, tau3=0.5, sectioning_max_iterations=10):
+        # Create a lambda that will match the format required by the code in the Newton methods
+        # for a line search method
+        # I.e. line_search(function, x0, gradient, H_inv, dx, tol)
+        # Also a lambda for f_deriv in the line search method
+        line_search = lambda f, x, gradient, H_inv, dx=10**-4, tol=10**-4: \
+            InexactLineSearchMethod(f, lambda pt:gradient(f, pt, dx), alpha_init, direction, x, f_bar, rho, sigma, tau, bracketing_max_iterations, tau2, tau3, sectioning_max_iterations)
+        return line_search
+             
                 
         
 # Newton's method      
@@ -212,7 +226,7 @@ class Newton(OptMethod):
             grad = gradient(function, x0, dx)
             Sk = -1*H_inv @ grad
             if alpha is None:
-                alpha = line_search(function, x0, grad, H_inv, dx, tol)
+                alpha = line_search(function, x0, gradient, H_inv, dx, tol)
             x1 = x0 + alpha*Sk
             # Check termination condition
             if termination_criterion(x0, x1, grad, H_inv, tol):

@@ -18,11 +18,16 @@ H_inv = newton_method.approximate_hessian_inv(testFunction1, x0)
 H = np.linalg.inv(H_inv)
 
 # Testing exact line search
-grad = newton_method.approximate_grad(testFunction1, x0)
-alpha = newton_method.exact_line_search(testFunction1, x0, grad, H_inv)
+#grad = newton_method.approximate_grad(testFunction1, x0)
+alpha = newton_method.exact_line_search(testFunction1, x0, newton_method.approximate_grad, H_inv)
 print(f"Minimizing alpha: {alpha}")
 
-dx = 10**-3
+# Testing inexact line search
+inexact_search = newton_method.create_inexact_linesearch(testFunction1, alpha_init=1, direction=np.array([1, 1.]))
+alpha = inexact_search(testFunction1, x0, newton_method.approximate_grad, H_inv)
+print(f"Inexact minimizing alpha: {alpha}")
+
+'''dx = 10**-3
 # Testing newton's method
 print("NEWTON'S METHOD #########################")
 print("Minimum for x**3 + 2xy + y**6")
@@ -76,3 +81,4 @@ print(f"Minimum of function found at {minimum} using residual stopping criterion
 print("Minimum for x**2 + y**2 - 1")
 minimum = bfgs.optimize(testFunction2, x0, dx=dx, termination_criterion=newton_method.residual_criterion, alpha=.1, tol=10**-4)
 print(f"Minimum of function found at {minimum} using residual stopping criterion")
+'''
