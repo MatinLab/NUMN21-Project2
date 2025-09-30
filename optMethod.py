@@ -1,4 +1,5 @@
 import numpy as np
+from linesearch import InexactLineSearchMethod
 
 class OptMethod():
     # Generic class for Quasi Newton methods
@@ -120,17 +121,18 @@ class OptMethod():
         return (b+a)/2
     
     # Line search methods
-    def line_search(self, function, x0, grad, H_inv, dx, tol):
+    def line_search(self, f, x, gradient, H_inv, dx, tol):
         # Follow this format when defining a line search method
         # Then specify that you want to use it as a parameter in optimize
         # Don't need self if the function is defined outside a class
         pass
     
     # Exact line search method
-    def exact_line_search(self, f, x, grad, H_inv, dx=10**-4, tol=10**-4):
+    def exact_line_search(self, f, x, gradient, H_inv, dx=10**-4, tol=10**-4):
         # Find the minimum of the function f(alpha) = f(x+alpha*(-H_inv@grad))
         # Using binary search
         # Find an interval [0, b] on which the sign of the derivative of f(alpha) changes
+        grad = gradient(f, x, dx)
         Sk = -1*H_inv @ grad
         f_alpha = lambda a: f(x+a*Sk)
         a = 0
@@ -150,6 +152,40 @@ class OptMethod():
         #print(f"sign change found on interval [{a}, {b}]")
         # Find the minimum on the interval a, b
         return self.binary_minimum(f_alpha, a, b, tol)
+    
+    # Inexact line search wrapper
+    def create_inexact_linesearch(self, f, alpha_init, dx=10**-4, tol=10**-4, f_bar=-np.inf, rho=1e-2, sigma=0.1, tau=0.9, bracketing_max_iterations=50,
+                              tau2=0.1, tau3=0.5, sectioning_max_iterations=10):
+    # Create a lambda that will match the format required by the code in the Newton methods
+        def line_search(f, x, gradient, H_inv, dx=10**-4, tol=10**-4):
+            # Compute the search direction at the current point
+            grad = gradient(f, x, dx)
+            direction = -H_inv @ grad
+            
+            #print(f"Line search called at x={x}")
+            #print(f"Direction: {direction}")
+            #print(f"Gradient norm: {np.linalg.norm(grad)}")
+            
+            # Call inexact line search with the current direction
+            alpha = InexactLineSearchMethod(
+                f, 
+                lambda pt: gradient(f, pt, dx), 
+                alpha_init, 
+                direction, 
+                x, 
+                f_bar, 
+                rho, 
+                sigma, 
+                tau, 
+                bracketing_max_iterations, 
+                tau2, 
+                tau3, 
+                sectioning_max_iterations
+            )
+            return alpha
+    
+        return line_search
+             
                 
         
 # Newton's method      
@@ -200,20 +236,20 @@ class Newton(OptMethod):
             line_search = self.exact_line_search
         # Run Newton's method
         H_inv = self.instantiate_hessian_inv(function, x0, gradient, dx)
-        #H_inv = np.linalg.inv(self.H)
-        #grad = gradient(function, x0, dx)
-        #Sk = -1*H_inv @ grad
-        #if alpha is None:
-            #alpha = line_search(function, x0, grad, H_inv, dx, tol)
-        #x1 = x0 + alpha*Sk
+
         i = 0
         while True:
             # Hasn't converged, make another step
             grad = gradient(function, x0, dx)
             Sk = -1*H_inv @ grad
             if alpha is None:
-                alpha = line_search(function, x0, grad, H_inv, dx, tol)
-            x1 = x0 + alpha*Sk
+                alpha_k = line_search(function, x0, gradient, H_inv, dx, tol)
+                #print(f"Alpha for step {i}: {alpha_k}")
+                #if i>20:
+                    #break
+            else:
+                alpha_k = alpha
+            x1 = x0 + alpha_k*Sk
             # Check termination condition
             if termination_criterion(x0, x1, grad, H_inv, tol):
                 break
@@ -365,4 +401,39 @@ class BFGS(Newton):
         H, H_inv = self.bfgs_update(f, x0, x, gradient, dx)
         self.H = H
         self.H_inv = H_inv
+        return H_inv
+
+# BFGS demo method that saves the approximated inv Hessian
+# for each iteration, for use in task 12
+class BFGS_demo(Newton):
+    # Perform Newton's method style steps, but approximate the Hessian using a BFGS rank 2 update
+    # BFGS update to the Hessian
+    def __init__(self):
+        super().__init__()
+        self.Hks = []
+        self.points = []
+    def bfgs_update(self, function, x0, x1, gradient, dx):
+        # Define delta and lambda values as
+        # deltak = xk+1-xk and lambdak=gradk+1-gradk
+        delta_k = x1-x0
+        lambda_k = gradient(function, x1, dx)-gradient(function, x0, dx)
+        # Reshaping vectors
+        delta_k = delta_k.reshape((-1, 1))
+        lambda_k = lambda_k.reshape((-1, 1))
+        H_inv = self.H_inv
+        # Make a rank 2 update
+        term1_factor = 1 + (lambda_k.T @ H_inv @ lambda_k)/(delta_k.T @ lambda_k)
+        term1 = (delta_k @ delta_k.T)/(delta_k.T @ lambda_k)
+        term2 = ((delta_k @ lambda_k.T @ H_inv) + (H_inv @ lambda_k @ delta_k.T))/(delta_k.T @ lambda_k)
+        Hkplus1_inv = H_inv + (term1_factor * term1) - term2
+        Hkplus1 = np.linalg.inv(Hkplus1_inv)
+        return Hkplus1, Hkplus1_inv
+    # Override the approximate_hessian_inv function
+    def approximate_hessian_inv(self, f, x, gradient=None, dx=10**-4, x0=None):
+        assert x0 is not None, "Previous point in the method required for BFGS step"
+        H, H_inv = self.bfgs_update(f, x0, x, gradient, dx)
+        self.H = H
+        self.H_inv = H_inv
+        self.Hks.append(H_inv)
+        self.points.append(x)
         return H_inv

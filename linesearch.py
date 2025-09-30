@@ -7,7 +7,9 @@ def InexactLineSearchMethod(f_func, f_deriv, alpha_init, direction, x_init=0, f_
     f_prime0 = np.dot(fd0, direction)
 
     if f_prime0 >= 0:
-        raise ValueError("No descending :c")
+        #raise ValueError("No descending :c")
+        #print("Not descending in the direction")
+        return alpha_init
 
     if f_bar > -np.inf:
         mu = (f_bar - f0) / (rho * f_prime0)
@@ -21,8 +23,8 @@ def InexactLineSearchMethod(f_func, f_deriv, alpha_init, direction, x_init=0, f_
     a = 0.0
     b = 0.0
 
-    print("== Bracketing phase ==")
-    print(f"{'it':>3} | {'alpha':>8} | {'f(alpha)':>12} | {'f_der(alpha)':>12}")
+    #print("== Bracketing phase ==")
+    #print(f"{'it':>3} | {'alpha':>8} | {'f(alpha)':>12} | {'f_der(alpha)':>12}")
 
     for i in range(bracketing_max_iterations):
         
@@ -38,7 +40,7 @@ def InexactLineSearchMethod(f_func, f_deriv, alpha_init, direction, x_init=0, f_
         phi_prime_curr = np.dot(grad_curr, direction)
         phi_prev = f_func(x_init + alpha_prev*direction)
 
-        print(f"{i} | {alpha_curr} | {phi_curr} | {phi_prime_curr}")
+        #print(f"{i} | {alpha_curr} | {phi_curr} | {phi_prime_curr}")
 
         if (phi_curr > armijo_bound) or (phi_curr >= phi_prev):
             a = alpha_prev
@@ -71,8 +73,8 @@ def InexactLineSearchMethod(f_func, f_deriv, alpha_init, direction, x_init=0, f_
     if a > b:
         a, b = b, a
     
-    print("\n=== Sectioning phase ===")
-    print(f"Initial bracket: [{a}, {b}]")
+    #print("\n=== Sectioning phase ===")
+    #print(f"Initial bracket: [{a}, {b}]")
 
     f_a = f_func(x_init + a * direction)
 
@@ -90,7 +92,7 @@ def InexactLineSearchMethod(f_func, f_deriv, alpha_init, direction, x_init=0, f_
         grad_currj = f_deriv(x_point)
         f_prime_currj = np.dot(grad_currj, direction)
 
-        print(f"{j} | {x_curr} | {f_x_point} | {f_prime_currj} | bracket= [{a}, {b}]")
+        #print(f"{j} | {x_curr} | {f_x_point} | {f_prime_currj} | bracket= [{a}, {b}]")
 
         if (f_x_point > armijo_bound_x_curr) or (f_x_point >= f_a):
             a_next = a

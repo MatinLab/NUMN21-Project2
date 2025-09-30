@@ -7,9 +7,9 @@ Claus Führer (2016)
 
 """
 
-from  scipy import dot,linspace
+#from  scipy import dot,linspace
 import scipy.optimize as so
-from numpy import array
+from numpy import array, dot, linspace
 
 
 def T(x, n):
