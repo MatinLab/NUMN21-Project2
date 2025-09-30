@@ -1,13 +1,20 @@
 import numpy as np
+from inspect import signature
 
-def InexactLineSearchMethod(f_func, f_deriv, alpha_init, direction, x_init=0, f_bar=-np.inf, rho=1e-2, sigma = 0.1, tau=9, bracketing_max_iterations=50,
+def InexactLineSearchMethod(f_func, f_deriv, alpha_init, direction, initials, f_bar=-np.inf, rho=1e-2, sigma = 0.1, tau=9, bracketing_max_iterations=50,
                             tau2=0.1, tau3=0.5,sectioning_max_iterations=10):
-    f0 = f_func(x_init)
-    fd0 = f_deriv(x_init)
+    
+    sig = signature(f_func)
+
+    numInputs = len(sig.parameters)
+
+    f0 = f_func(*initials[:numInputs])
+    fd0 = f_deriv(*initials[:numInputs])
+    
     f_prime0 = np.dot(fd0, direction)
 
     if f_prime0 >= 0:
-        raise ValueError("No descending :c")
+        raise ValueError("No descending :c", f_prime0)
 
     if f_bar > -np.inf:
         mu = (f_bar - f0) / (rho * f_prime0)
@@ -27,16 +34,16 @@ def InexactLineSearchMethod(f_func, f_deriv, alpha_init, direction, x_init=0, f_
     for i in range(bracketing_max_iterations):
         
         #Evaluate at current alpha
-        x_curr = x_init + alpha_curr * direction
-        phi_curr = f_func(x_curr)
+        x_curr = initials + alpha_curr * direction
+        phi_curr = f_func(*x_curr)
 
         if phi_curr <= f_bar:
             return alpha_curr
         
         armijo_bound = f0 + alpha_curr*rho*f_prime0
-        grad_curr = f_deriv(x_curr)
+        grad_curr = f_deriv(*x_curr)
         phi_prime_curr = np.dot(grad_curr, direction)
-        phi_prev = f_func(x_init + alpha_prev*direction)
+        phi_prev = f_func(*(initials + alpha_prev*direction))
 
         print(f"{i} | {alpha_curr} | {phi_curr} | {phi_prime_curr}")
 
@@ -74,7 +81,7 @@ def InexactLineSearchMethod(f_func, f_deriv, alpha_init, direction, x_init=0, f_
     print("\n=== Sectioning phase ===")
     print(f"Initial bracket: [{a}, {b}]")
 
-    f_a = f_func(x_init + a * direction)
+    f_a = f_func(*(initials + a * direction))
 
     for j in range(sectioning_max_iterations):
         lower_bound = a + tau2 * (b - a)
@@ -84,10 +91,10 @@ def InexactLineSearchMethod(f_func, f_deriv, alpha_init, direction, x_init=0, f_
         # value between both bounds
         x_curr = 0.5 * (lower_bound + upper_bound)
 
-        x_point = x_init + x_curr * direction
+        x_point = initials + x_curr * direction
         armijo_bound_x_curr = f0 + rho * x_curr * f_prime0
-        f_x_point = f_func(x_point)
-        grad_currj = f_deriv(x_point)
+        f_x_point = f_func(*x_point)
+        grad_currj = f_deriv(*x_point)
         f_prime_currj = np.dot(grad_currj, direction)
 
         print(f"{j} | {x_curr} | {f_x_point} | {f_prime_currj} | bracket= [{a}, {b}]")
