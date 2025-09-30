@@ -154,14 +154,36 @@ class OptMethod():
         return self.binary_minimum(f_alpha, a, b, tol)
     
     # Inexact line search wrapper
-    def create_inexact_linesearch(self, f, alpha_init, direction, dx=10**-4, tol=10**-4, f_bar=np.inf, rho=1e-2, sigma=0.1, tau=9, bracketing_max_iterations=50,
-                                  tau2=0.1, tau3=0.5, sectioning_max_iterations=10):
-        # Create a lambda that will match the format required by the code in the Newton methods
-        # for a line search method
-        # I.e. line_search(function, x0, gradient, H_inv, dx, tol)
-        # Also a lambda for f_deriv in the line search method
-        line_search = lambda f, x, gradient, H_inv, dx=10**-4, tol=10**-4: \
-            InexactLineSearchMethod(f, lambda pt:gradient(f, pt, dx), alpha_init, direction, x, f_bar, rho, sigma, tau, bracketing_max_iterations, tau2, tau3, sectioning_max_iterations)
+    def create_inexact_linesearch(self, f, alpha_init, dx=10**-4, tol=10**-4, f_bar=-np.inf, rho=1e-2, sigma=0.1, tau=0.9, bracketing_max_iterations=50,
+                              tau2=0.1, tau3=0.5, sectioning_max_iterations=10):
+    # Create a lambda that will match the format required by the code in the Newton methods
+        def line_search(f, x, gradient, H_inv, dx=10**-4, tol=10**-4):
+            # Compute the search direction at the current point
+            grad = gradient(f, x, dx)
+            direction = -H_inv @ grad
+            
+            #print(f"Line search called at x={x}")
+            #print(f"Direction: {direction}")
+            #print(f"Gradient norm: {np.linalg.norm(grad)}")
+            
+            # Call inexact line search with the current direction
+            alpha = InexactLineSearchMethod(
+                f, 
+                lambda pt: gradient(f, pt, dx), 
+                alpha_init, 
+                direction, 
+                x, 
+                f_bar, 
+                rho, 
+                sigma, 
+                tau, 
+                bracketing_max_iterations, 
+                tau2, 
+                tau3, 
+                sectioning_max_iterations
+            )
+            return alpha
+    
         return line_search
              
                 
