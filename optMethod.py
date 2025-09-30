@@ -226,8 +226,12 @@ class Newton(OptMethod):
             grad = gradient(function, x0, dx)
             Sk = -1*H_inv @ grad
             if alpha is None:
-                alpha = line_search(function, x0, gradient, H_inv, dx, tol)
-            x1 = x0 + alpha*Sk
+                alpha_k = line_search(function, x0, gradient, H_inv, dx, tol)
+                if i%5 == 0:
+                    print(f"Alpha for step {i}: {alpha_k}")
+            else:
+                alpha_k = alpha
+            x1 = x0 + alpha_k*Sk
             # Check termination condition
             if termination_criterion(x0, x1, grad, H_inv, tol):
                 break
