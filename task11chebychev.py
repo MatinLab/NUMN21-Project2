@@ -1,6 +1,7 @@
 # Use the optimization problem class to run bfgs on the chebychev eq
 import numpy as np
 import scipy.optimize as so
+import matplotlib.pyplot as plt
 from optProblem import OptProblem
 from chebyquad_problem import *
 
@@ -21,3 +22,11 @@ for i in [4, 8, 11]:
     xmin = so.fmin_bfgs(chebyquad, x, gradchebyquad, disp=False)
     print(f"Minimum output from scipy:\n\t{xmin}")
     print()
+    
+    plt.scatter(x, ourmin, label="Our Min", marker='+', s=100)
+    plt.scatter(x, xmin, label="Scipy Min")
+    plt.legend()
+    plt.xlabel("x values")
+    plt.ylabel("Minimums")
+    plt.title(f"Our mins vs scipy with {i} values")
+    plt.show()

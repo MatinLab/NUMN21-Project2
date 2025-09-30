@@ -236,12 +236,7 @@ class Newton(OptMethod):
             line_search = self.exact_line_search
         # Run Newton's method
         H_inv = self.instantiate_hessian_inv(function, x0, gradient, dx)
-        #H_inv = np.linalg.inv(self.H)
-        #grad = gradient(function, x0, dx)
-        #Sk = -1*H_inv @ grad
-        #if alpha is None:
-            #alpha = line_search(function, x0, grad, H_inv, dx, tol)
-        #x1 = x0 + alpha*Sk
+
         i = 0
         while True:
             # Hasn't converged, make another step
@@ -406,4 +401,39 @@ class BFGS(Newton):
         H, H_inv = self.bfgs_update(f, x0, x, gradient, dx)
         self.H = H
         self.H_inv = H_inv
+        return H_inv
+
+# BFGS demo method that saves the approximated inv Hessian
+# for each iteration, for use in task 12
+class BFGS_demo(Newton):
+    # Perform Newton's method style steps, but approximate the Hessian using a BFGS rank 2 update
+    # BFGS update to the Hessian
+    def __init__(self):
+        super().__init__()
+        self.Hks = []
+        self.points = []
+    def bfgs_update(self, function, x0, x1, gradient, dx):
+        # Define delta and lambda values as
+        # deltak = xk+1-xk and lambdak=gradk+1-gradk
+        delta_k = x1-x0
+        lambda_k = gradient(function, x1, dx)-gradient(function, x0, dx)
+        # Reshaping vectors
+        delta_k = delta_k.reshape((-1, 1))
+        lambda_k = lambda_k.reshape((-1, 1))
+        H_inv = self.H_inv
+        # Make a rank 2 update
+        term1_factor = 1 + (lambda_k.T @ H_inv @ lambda_k)/(delta_k.T @ lambda_k)
+        term1 = (delta_k @ delta_k.T)/(delta_k.T @ lambda_k)
+        term2 = ((delta_k @ lambda_k.T @ H_inv) + (H_inv @ lambda_k @ delta_k.T))/(delta_k.T @ lambda_k)
+        Hkplus1_inv = H_inv + (term1_factor * term1) - term2
+        Hkplus1 = np.linalg.inv(Hkplus1_inv)
+        return Hkplus1, Hkplus1_inv
+    # Override the approximate_hessian_inv function
+    def approximate_hessian_inv(self, f, x, gradient=None, dx=10**-4, x0=None):
+        assert x0 is not None, "Previous point in the method required for BFGS step"
+        H, H_inv = self.bfgs_update(f, x0, x, gradient, dx)
+        self.H = H
+        self.H_inv = H_inv
+        self.Hks.append(H_inv)
+        self.points.append(x)
         return H_inv

@@ -40,6 +40,11 @@ class OptProblem():
         bfgsMethod = BFGS()
         result = bfgsMethod.optimize(self.function, x0, self.gradient, dx, termination_criterion, tol, alpha, line_search, max_iterations)
         return result
+    def bfgs_demo(self, x0, dx=10**-4, termination_criterion=None, tol=10**-4, alpha=None, line_search=None, max_iterations=10**5):
+        # Do bfgs method on the function
+        bfgsMethod = BFGS_demo()
+        result = bfgsMethod.optimize(self.function, x0, self.gradient, dx, termination_criterion, tol, alpha, line_search, max_iterations)
+        return result, bfgsMethod.Hks, bfgsMethod.points
 
 '''Usage:        
 myfunc = None
