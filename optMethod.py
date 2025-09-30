@@ -249,8 +249,9 @@ class Newton(OptMethod):
             Sk = -1*H_inv @ grad
             if alpha is None:
                 alpha_k = line_search(function, x0, gradient, H_inv, dx, tol)
-                #if i%5 == 0:
-                    #print(f"Alpha for step {i}: {alpha_k}")
+                #print(f"Alpha for step {i}: {alpha_k}")
+                #if i>20:
+                    #break
             else:
                 alpha_k = alpha
             x1 = x0 + alpha_k*Sk

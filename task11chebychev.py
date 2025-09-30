@@ -10,12 +10,12 @@ solver = OptProblem(chebyquad, cheby_grad)
 
 # X points, 4 8 and 11 values between 0 and 1
 termination_condition = solver.OptMethod.cauchy_criterion
-alpha = 0.1
+inexact_search = solver.OptMethod.create_inexact_linesearch(solver.function, alpha_init=1)
 for i in [4, 8, 11]:
     print(f"Approximating using {i} points")
     x = linspace(0, 1, i)
     # Our optimizer
-    ourmin = solver.bfgs(x, termination_criterion=termination_condition, alpha=alpha)
+    ourmin = solver.bfgs(x, termination_criterion=termination_condition, line_search=inexact_search)
     print(f"Minimum output from our solver:\n\t{ourmin}")
     # Scipy output
     xmin = so.fmin_bfgs(chebyquad, x, gradchebyquad, disp=False)

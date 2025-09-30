@@ -8,7 +8,7 @@ def InexactLineSearchMethod(f_func, f_deriv, alpha_init, direction, x_init=0, f_
 
     if f_prime0 >= 0:
         #raise ValueError("No descending :c")
-        print("Not descending in the direction")
+        #print("Not descending in the direction")
         return alpha_init
 
     if f_bar > -np.inf:
