@@ -7,10 +7,11 @@ Task 5 is presented in rosen_wolfe.png \
 Tasks 6-7 are located in linesearch.py \
 Tasks 10-11 are located in task11chebychev.py \
 Task 12 is located in task12BFGSAnalysis.py \
+Note that Task 12 now uses the demo decorator as a replacement of the BFGS_demo class. It can also be used on other Quasi Newton methods, as shown in dfp_demo.py.
 
 Work done: \
 *All members worked together to set up the structure of the optimization classes and implemented tasks 1-3.* \
 **Rafael:** Worked on tasks 5, 6, 7 \
 **Nicolas:** Worked on tasks 6, 7, and testing \
 **Martin:** Worked on tasks 5, 8 and bug fixing \
-**Colin:** Worked on tasks 4, 8, 9, 10, 11, 12
+**Colin:** Worked on tasks 4, 8, 9, 10, 11, 12, added demo decorator
