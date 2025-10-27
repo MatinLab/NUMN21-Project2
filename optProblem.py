@@ -45,6 +45,12 @@ class OptProblem():
         bfgsMethod = BFGS_demo()
         result = bfgsMethod.optimize(self.function, x0, self.gradient, dx, termination_criterion, tol, alpha, line_search, max_iterations)
         return result, bfgsMethod.Hks, bfgsMethod.points
+    # Another demo function to show it can be used in general on other solvers
+    def dfp_demo(self, x0, dx=10**-4, termination_criterion=None, tol=10**-4, alpha=None, line_search=None, max_iterations=10**5):
+        # Do dfp method on the function
+        dfpMethod = DFP_demo()
+        result = dfpMethod.optimize(self.function, x0, self.gradient, dx, termination_criterion, tol, alpha, line_search, max_iterations)
+        return result, dfpMethod.Hks, dfpMethod.points
 
 '''Usage:        
 myfunc = None

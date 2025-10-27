@@ -186,7 +186,23 @@ class OptMethod():
     
         return line_search
              
-                
+# Decorator for a quasi newton class, saves points and inverse hessians as it solves
+def demo(cls):
+    class wrapped_class(cls):
+        def __init__(self):
+            # Initialize as the class inherited from, just add Hk history and points
+            super().__init__()
+            self.Hks = []
+            self.points = []
+        # Replace the approximate_hessian_inv function with one that saves history
+        def approximate_hessian_inv(self, f, x, gradient=None, dx=10**-4, x0=None):
+            # Call the original
+            H_inv = super().approximate_hessian_inv(f, x, gradient, dx, x0)
+            # Add the computed H_inv and the x point to lists
+            self.Hks.append(H_inv)
+            self.points.append(x)
+            return H_inv
+    return wrapped_class
         
 # Newton's method      
 class Newton(OptMethod):
@@ -405,35 +421,15 @@ class BFGS(Newton):
 
 # BFGS demo method that saves the approximated inv Hessian
 # for each iteration, for use in task 12
-class BFGS_demo(Newton):
-    # Perform Newton's method style steps, but approximate the Hessian using a BFGS rank 2 update
-    # BFGS update to the Hessian
-    def __init__(self):
-        super().__init__()
-        self.Hks = []
-        self.points = []
-    def bfgs_update(self, function, x0, x1, gradient, dx):
-        # Define delta and lambda values as
-        # deltak = xk+1-xk and lambdak=gradk+1-gradk
-        delta_k = x1-x0
-        lambda_k = gradient(function, x1, dx)-gradient(function, x0, dx)
-        # Reshaping vectors
-        delta_k = delta_k.reshape((-1, 1))
-        lambda_k = lambda_k.reshape((-1, 1))
-        H_inv = self.H_inv
-        # Make a rank 2 update
-        term1_factor = 1 + (lambda_k.T @ H_inv @ lambda_k)/(delta_k.T @ lambda_k)
-        term1 = (delta_k @ delta_k.T)/(delta_k.T @ lambda_k)
-        term2 = ((delta_k @ lambda_k.T @ H_inv) + (H_inv @ lambda_k @ delta_k.T))/(delta_k.T @ lambda_k)
-        Hkplus1_inv = H_inv + (term1_factor * term1) - term2
-        Hkplus1 = np.linalg.inv(Hkplus1_inv)
-        return Hkplus1, Hkplus1_inv
-    # Override the approximate_hessian_inv function
-    def approximate_hessian_inv(self, f, x, gradient=None, dx=10**-4, x0=None):
-        assert x0 is not None, "Previous point in the method required for BFGS step"
-        H, H_inv = self.bfgs_update(f, x0, x, gradient, dx)
-        self.H = H
-        self.H_inv = H_inv
-        self.Hks.append(H_inv)
-        self.points.append(x)
-        return H_inv
+# Use @demo decorator
+@demo
+class BFGS_demo(BFGS):
+    pass
+
+# Note that a demo version of any of the newton solvers can be created by adding a new class like this
+# with the @demo decorator
+# I.E
+@demo
+class DFP_demo(DFP):
+    pass
+# See task12BFGSAnalysis.py and dfp_demo.py to see the decorator in use
