@@ -1,4 +1,5 @@
 import numpy as np
+import inspect
 from linesearch import InexactLineSearchMethod
 
 class OptMethod():
@@ -79,16 +80,12 @@ class OptMethod():
     @staticmethod
     def residual_criterion(x0, x1, grad, H_inv, tol=10**-4):
         # Determine whether the residual is small enough
-        if np.linalg.norm(grad) < tol:
-            return True
-        return False
+        return np.linalg.norm(grad) < tol
     # Cauchy criterion
     @staticmethod
     def cauchy_criterion(x0, x1, grad, H_inv, tol=10**-4):
         # Determine whether the correction is small enough
-        if np.linalg.norm(x1-x0) < tol:
-            return True
-        return False
+        return np.linalg.norm(x1-x0) < tol
     # Binomial search function
     def binary_minimum(self, f, a, b, tol=10**-4, max_iterations=10**5):
         # Search for a minimum of f on the interval [a, b]
@@ -185,7 +182,12 @@ class OptMethod():
             return alpha
     
         return line_search
-             
+
+# Decorator to check for an update function
+def update_function(func):
+    func.__is_update__ = True
+    return func
+
 # Decorator for a quasi newton class, saves points and inverse hessians as it solves
 def demo(cls):
     class wrapped_class(cls):
@@ -280,6 +282,27 @@ class Newton(OptMethod):
                 print("Maximum iterations achieved without convergence")
                 break
         return x1
+    
+
+    # This function was moved into the Newton class 
+    # Instead of being in each class, it's defined here and detects the function by itself 
+    def approximate_hessian_inv(self, f, x, gradient=None, dx=10**-4, x0=None):
+        update_func = None
+
+        # Search for methods tagged as __is_update__
+        for _, method in inspect.getmembers(self, predicate=inspect.ismethod):
+            if getattr(method, "__is_update__", False):
+                update_func = method
+                break
+        
+        if update_func is None:
+            return super().approximate_hessian_inv(f, x, gradient, dx, x0)
+
+        assert x0 is not None, f"Previous point in the method required for {self.__class__.__name__} step"
+        H, H_inv = update_func(f, x0, x, gradient, dx)
+        self.H = H
+        self.H_inv = H_inv
+        return H_inv
         
 # Quasi Newton methods
 
@@ -288,6 +311,7 @@ class GoodBroyden(Newton):
     # Perform Newton's method style steps, but approximate the Hessian using a "good" Broyden rank 1 update and
     # the Sherman-Morisson computation of the new matrix
     # Broyden update to the Hessian
+    @update_function
     def broyden_update(self, function, x0, x1, gradient, dx):
         # Define delta and lambda values as
         # deltak = xk+1-xk and lambdak=gradk+1-gradk
@@ -302,18 +326,12 @@ class GoodBroyden(Newton):
         Hkplus1_inv = H_inv + summed_value
         Hkplus1 = np.linalg.inv(Hkplus1_inv)
         return Hkplus1, Hkplus1_inv
-    # Override the approximate_hessian_inv function
-    def approximate_hessian_inv(self, f, x, gradient=None, dx=10**-4, x0=None):
-        assert x0 is not None, "Previous point in the method required for Broyden step"
-        H, H_inv = self.broyden_update(f, x0, x, gradient, dx)
-        self.H = H
-        self.H_inv = H_inv
-        return H_inv
 
 # Bad Broyden method
 class BadBroyden(Newton):
     # Perform Newton's method style steps, but approximate the Hessian using a "bad" Broyden rank 1 update
     # Broyden update to the Hessian
+    @update_function
     def broyden_update(self, function, x0, x1, gradient, dx):
         # Define delta and lambda values as
         # deltak = xk+1-xk and lambdak=gradk+1-gradk
@@ -328,18 +346,12 @@ class BadBroyden(Newton):
         Hkplus1 = np.linalg.inv(Hkplus1_inv)
         return Hkplus1, Hkplus1_inv
     # Override the approximate_hessian_inv function
-    def approximate_hessian_inv(self, f, x, gradient=None, dx=10**-4, x0=None):
-        assert x0 is not None, "Previous point in the method required for Broyden step"
-        H, H_inv = self.broyden_update(f, x0, x, gradient, dx)
-        self.H = H
-        self.H_inv = H_inv
-        return H_inv
-
 
 # Symmetric Broyden method
 class SymmetricBroyden(Newton):
     # Perform Newton's method style steps, but approximate the Hessian using a symmetric Broyden rank 1 update
     # Broyden update to the Hessian
+    @update_function
     def broyden_update(self, function, x0, x1, gradient, dx):
         # Define delta and lambda values as
         # deltak = xk+1-xk and lambdak=gradk+1-gradk
@@ -356,18 +368,12 @@ class SymmetricBroyden(Newton):
         Hkplus1_inv = H_inv + (a_k * (u_k @ u_k.T))
         Hkplus1 = np.linalg.inv(Hkplus1_inv)
         return Hkplus1, Hkplus1_inv
-    # Override the approximate_hessian_inv function
-    def approximate_hessian_inv(self, f, x, gradient=None, dx=10**-4, x0=None):
-        assert x0 is not None, "Previous point in the method required for Broyden step"
-        H, H_inv = self.broyden_update(f, x0, x, gradient, dx)
-        self.H = H
-        self.H_inv = H_inv
-        return H_inv
 
 # DFP method
 class DFP(Newton):
     # Perform Newton's method style steps, but approximate the Hessian using a DFP rank 2 update
     # DFP update to the Hessian
+    @update_function
     def dfp_update(self, function, x0, x1, gradient, dx):
         # Define delta and lambda values as
         # deltak = xk+1-xk and lambdak=gradk+1-gradk
@@ -383,18 +389,12 @@ class DFP(Newton):
         Hkplus1_inv = H_inv + term1 - term2
         Hkplus1 = np.linalg.inv(Hkplus1_inv)
         return Hkplus1, Hkplus1_inv
-    # Override the approximate_hessian_inv function
-    def approximate_hessian_inv(self, f, x, gradient=None, dx=10**-4, x0=None):
-        assert x0 is not None, "Previous point in the method required for DFP step"
-        H, H_inv = self.dfp_update(f, x0, x, gradient, dx)
-        self.H = H
-        self.H_inv = H_inv
-        return H_inv
 
 # BFGS method
 class BFGS(Newton):
     # Perform Newton's method style steps, but approximate the Hessian using a BFGS rank 2 update
     # BFGS update to the Hessian
+    @update_function
     def bfgs_update(self, function, x0, x1, gradient, dx):
         # Define delta and lambda values as
         # deltak = xk+1-xk and lambdak=gradk+1-gradk
@@ -411,13 +411,6 @@ class BFGS(Newton):
         Hkplus1_inv = H_inv + (term1_factor * term1) - term2
         Hkplus1 = np.linalg.inv(Hkplus1_inv)
         return Hkplus1, Hkplus1_inv
-    # Override the approximate_hessian_inv function
-    def approximate_hessian_inv(self, f, x, gradient=None, dx=10**-4, x0=None):
-        assert x0 is not None, "Previous point in the method required for BFGS step"
-        H, H_inv = self.bfgs_update(f, x0, x, gradient, dx)
-        self.H = H
-        self.H_inv = H_inv
-        return H_inv
 
 # BFGS demo method that saves the approximated inv Hessian
 # for each iteration, for use in task 12
