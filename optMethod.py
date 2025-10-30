@@ -285,7 +285,7 @@ class Newton(OptMethod):
     
 
     # This function was moved into the Newton class 
-    # Instead of being in each class, it's defined here and detects the function by itself 
+    # Instead of being in each class, it's defined here and detects the functionby itself 
     def approximate_hessian_inv(self, f, x, gradient=None, dx=10**-4, x0=None):
         update_func = None
 

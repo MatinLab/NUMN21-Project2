@@ -33,6 +33,7 @@ termination_condition = solver.OptMethod.residual_criterion
 inexact_search = solver.OptMethod.create_inexact_linesearch(solver.function, alpha_init=1)
 x0 = np.array([-5, 2.])
 minimum, Hk_invs, points = solver.bfgs_demo(x0, termination_criterion=termination_condition, alpha=0.5)
+
 print(f"Found minimum: {minimum}")
 # Real hessian inverses
 real_Hk_invs = [np.linalg.inv(myHessian(pt)) for pt in points]
